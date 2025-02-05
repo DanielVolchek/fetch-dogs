@@ -1,12 +1,75 @@
-import { Maybe } from "./types";
+import { Dog } from "./FetchSDK/models";
+import { AuthRouteResponses, AuthRoutes } from "./FetchSDK/services/AuthClient";
+import { DogRouteResponses, DogRoutes } from "./FetchSDK/services/DogClient";
+import {
+  LocationRouteResponses,
+  LocationRoutes,
+} from "./FetchSDK/services/LocationClient";
 
-type FetchOptionsType = Parameters<typeof fetch>[1];
+type FetchType<T> =
+  | {
+      result: T;
+      error: null;
+    }
+  | {
+      result: null;
+      error: {
+        status: number;
+        message: string;
+      };
+    };
 
-export const INTERNAL_API_URL = "https://frontend-take-home-service.fetch.com";
+type InternalAPIPaths = AuthRoutes | DogRoutes | LocationRoutes;
 
-export const internalFetch = async <T = void>(
-  url: string,
-  options?: FetchOptionsType,
-): Maybe<T> => {
-  const results = await fetch(`${INTERNAL_API_URL}`);
-};
+type InternalResponseType = AuthRouteResponses &
+  DogRouteResponses &
+  LocationRouteResponses;
+
+export class FetchApiService {
+  private base_url: string;
+
+  constructor(url: string) {
+    this.base_url = url;
+  }
+
+  fetch = async <
+    TPath extends InternalAPIPaths = InternalAPIPaths,
+    T = InternalResponseType[TPath],
+  >(
+    path: TPath,
+    options?: RequestInit & { params?: Record<string, unknown> },
+  ): Promise<FetchType<T>> => {
+    try {
+      // TODO default options object and merge
+      const _options: typeof options = { credentials: "include", ...options };
+
+      const url = new URL(this.base_url, path);
+
+      for (const [key, value] of Object.entries(_options.params ?? {})) {
+        url.searchParams.append(key, JSON.stringify(value));
+      }
+
+      const res = await fetch(`${this.base_url}/${path}`, _options);
+
+      if (!res.ok) {
+        return {
+          result: null,
+          error: {
+            status: res.status,
+            // TODO add error message
+            message: `${"error message here TODO"}`,
+          },
+        };
+      }
+
+      // const contentType = res.headers.get("content-type");
+      // if (contentType && contentType.includes("application/json")) {
+      // }
+
+      const data = (await res.json()) as T;
+      return { result: data, error: null };
+    } catch (err) {
+      return { result: null, error: { status: 400, message: `${err}` } };
+    }
+  };
+}
