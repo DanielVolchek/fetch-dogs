@@ -40,8 +40,8 @@ export class FetchApiService {
     options?: RequestInit & { params?: Record<string, unknown> },
   ): Promise<FetchType<T>> => {
     try {
-      // TODO default options object and merge
-      const _options: typeof options = { credentials: "include", ...options };
+      const defaultOptions = { credentials: "include" } as const;
+      const _options: typeof options = { ...defaultOptions, ...options };
 
       const url = new URL(this.base_url, path);
 

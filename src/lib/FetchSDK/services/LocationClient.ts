@@ -38,7 +38,13 @@ export class LocationClient extends BaseClient {
   async getLocation(zipCodes: string[]) {
     // TODO switch to error type from fetch
     if (zipCodes.length > 100) {
-      throw new Error("Zip codes length should be lower than 100");
+      return {
+        result: null,
+        error: {
+          status: 400,
+          message: "Zip codes length must be shorter than 100",
+        },
+      };
     }
 
     return await this.fetchService.fetch("/locations", {

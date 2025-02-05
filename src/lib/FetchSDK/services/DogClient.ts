@@ -41,8 +41,13 @@ export class DogClient extends BaseClient {
 
   async getDogs(dogs: string[]) {
     if (dogs.length > 100) {
-      // TODO switch this to return the value from fetchtype
-      throw new Error("Dogs id array length must be less than 100");
+      return {
+        result: null,
+        error: {
+          status: 400,
+          message: "Dogs id array length must be less than 100",
+        },
+      };
     }
 
     return await this.fetchService.fetch("/dogs/search", {
