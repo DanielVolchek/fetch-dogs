@@ -1,4 +1,5 @@
 import { FlatCompat } from "@eslint/eslintrc";
+import eslintPluginQuery from "@tanstack/eslint-plugin-query";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -16,6 +17,7 @@ const eslintConfig = [
     "next/typescript",
     "plugin:prettier/recommended",
   ),
+  ...eslintPluginQuery.configs["flat/recommended"],
   {
     plugins: {
       "simple-import-sort": simpleImportSort,

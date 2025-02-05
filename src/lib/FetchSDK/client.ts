@@ -1,3 +1,3 @@
-import { FetchSDK } from "./index";
+import { FetchInternalSDK } from ".";
 
-export const FetchSDKClient = new FetchSDK();
+export const FetchSDKClient = new FetchInternalSDK();

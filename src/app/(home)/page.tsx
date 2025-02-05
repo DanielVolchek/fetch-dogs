@@ -1,2 +1,10 @@
+import { Login } from "./components/login";
+
 // Server rendered home page component
-export default async function Home() {}
+export default function Home() {
+  return (
+    <main>
+      <Login />
+    </main>
+  );
+}

@@ -36,7 +36,6 @@ type GetLocationOptions = {
 
 export class LocationClient extends BaseClient {
   async getLocation(zipCodes: string[]) {
-    // TODO switch to error type from fetch
     if (zipCodes.length > 100) {
       return {
         result: null,
