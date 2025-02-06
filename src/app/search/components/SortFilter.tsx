@@ -32,6 +32,7 @@ export const SortComponent: FC<SortComponentProps> = (props) => {
       </label>
       <div className="flex gap-2" id="#sortBox">
         <Select
+          aria-label="sort by"
           placeholder="Select sort"
           selectedKeys={[sortField]}
           onSelectionChange={(_key) => {
