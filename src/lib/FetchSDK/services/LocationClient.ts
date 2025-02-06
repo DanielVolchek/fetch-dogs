@@ -1,5 +1,3 @@
-import { FetchApiService } from "@/lib/fetch";
-
 import { Coordinates } from "../models";
 import { BaseClient } from "./BaseClient";
 

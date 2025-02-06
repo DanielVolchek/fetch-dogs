@@ -2,7 +2,7 @@
 
 import { Form, Input } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { ChangeEventHandler, FormEventHandler, useState } from "react";
+import { FormEventHandler, useState } from "react";
 
 import { FetchSDKClient } from "@/lib/FetchSDK/client";
 

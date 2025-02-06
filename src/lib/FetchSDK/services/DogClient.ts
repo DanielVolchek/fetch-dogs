@@ -1,4 +1,3 @@
-import { FetchApiService } from "@/lib/fetch";
 import { SortFilter } from "@/lib/types";
 
 import { Dog } from "../models";
