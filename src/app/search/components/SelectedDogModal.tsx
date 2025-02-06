@@ -1,23 +1,49 @@
-import { Modal, useDisclosure } from "@heroui/react";
-import { FC } from "react";
+import { Modal, ModalBody, ModalContent, Spinner } from "@heroui/react";
+import JSConfetti from "js-confetti";
+import { FC, useEffect } from "react";
 
 import { Dog } from "@/lib/FetchSDK/models";
-import { DogClient } from "@/lib/FetchSDK/services/DogClient";
 
-import { DogCard, StaticDogCard } from "./DogCard";
+import { DogCard } from "./DogCard";
 
 type PropsType = {
-  dog: Dog;
+  match: Dog | undefined | null;
+  isPending: boolean;
+  onClose: () => void;
 };
 
 export const SelectedDogModal: FC<PropsType> = (props) => {
-  const { dog } = props;
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { match, onClose, isPending } = props;
 
   return (
-    <Modal backdrop="blur" isOpen={isOpen}>
-      <h2>Your dog is </h2>
-      <StaticDogCard dog={dog} />
+    <Modal
+      backdrop="blur"
+      isOpen={true}
+      onClose={onClose}
+      isDismissable={false}
+      className="w-full"
+    >
+      <ModalContent>
+        <ModalBody className="w-full p-8">
+          {isPending || !match ? (
+            <Spinner />
+          ) : (
+            <>
+              <Confetti />
+              <h2>Your dog is </h2>
+              <DogCard dog={match} staticCard={true} />
+            </>
+          )}
+        </ModalBody>
+      </ModalContent>
     </Modal>
   );
+};
+
+const Confetti = () => {
+  useEffect(() => {
+    const confetti = new JSConfetti();
+    confetti.addConfetti();
+  }, []);
+  return <></>;
 };

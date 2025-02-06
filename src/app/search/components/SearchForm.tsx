@@ -2,6 +2,7 @@ import {
   Autocomplete,
   AutocompleteItem,
   Form,
+  Input,
   Pagination,
   Select,
   SelectItem,
@@ -9,12 +10,11 @@ import {
   Tabs,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { ReadonlyURLSearchParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Dispatch,
   FC,
   SetStateAction,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -35,8 +35,6 @@ type PropsType = {
   total: number;
 };
 
-type ConstrainedPerPageType = 25 | 50 | 100;
-
 const parseSort = <T extends string>(sort: SortFilter<T>) => {
   return sort.split(":") as [T, SortDir];
 };
@@ -45,7 +43,9 @@ export type FormStateType = {
   breed: string;
   page: number;
   sort: SortFilter<DogSortOptions>;
-  perPage: ConstrainedPerPageType;
+  perPage: number;
+  minAge: number | null;
+  maxAge: number | null;
 };
 
 const DEFAULT_FORM_STATE: FormStateType = {
@@ -53,6 +53,8 @@ const DEFAULT_FORM_STATE: FormStateType = {
   page: 1,
   sort: "breed:desc",
   perPage: 25,
+  minAge: null,
+  maxAge: null,
 };
 
 type Options<T> = {
@@ -134,6 +136,11 @@ const toString = <T extends number | string | null>(value: T): string => {
   return "";
 };
 
+const NumberSerializer = {
+  serializer: toString,
+  deserializer: (value: string) => parseInt(value),
+};
+
 export const useSearchFormState = (
   updateSearchState: PropsType["updateSearchState"],
 ) => {
@@ -148,16 +155,24 @@ export const useSearchFormState = (
   const [page, setPage] = useStateWithURLUpdate(
     "page",
     DEFAULT_FORM_STATE.page,
-    { serializer: toString, deserializer: parseInt },
+    NumberSerializer,
   );
-  const [perPage, setPerPage] = useStateWithURLUpdate<ConstrainedPerPageType>(
+  const [perPage, setPerPage] = useStateWithURLUpdate(
     "perPage",
     DEFAULT_FORM_STATE.perPage,
-    {
-      serializer: toString,
-      deserializer: (value: string) =>
-        parseInt(value) as ConstrainedPerPageType,
-    },
+    NumberSerializer,
+  );
+
+  const [minAge, setMinAge] = useStateWithURLUpdate(
+    "minAge",
+    DEFAULT_FORM_STATE.minAge,
+    NumberSerializer,
+  );
+
+  const [maxAge, setMaxAge] = useStateWithURLUpdate(
+    "maxAge",
+    DEFAULT_FORM_STATE.maxAge,
+    NumberSerializer,
   );
 
   const formState = useMemo(
@@ -166,8 +181,10 @@ export const useSearchFormState = (
       sort,
       page,
       perPage,
+      minAge,
+      maxAge,
     }),
-    [breed, sort, page, perPage],
+    [breed, sort, page, perPage, minAge, maxAge],
   );
 
   useEffect(() => {
@@ -179,6 +196,8 @@ export const useSearchFormState = (
     sort: setSort,
     page: setPage,
     perPage: setPerPage,
+    minAge: setMinAge,
+    maxAge: setMaxAge,
   };
 
   return { formState, updaters };
@@ -191,19 +210,23 @@ export const SearchForm: FC<PropsType> = (props) => {
 
   const sort = parseSort(formState.sort as SortFilter<DogSortOptions>);
 
-  useEffect(() => {
-    console.log("component loaded for the first time");
-  }, []);
-
-  useEffect(() => {
-    console.log("per page changed");
-  }, [formState.perPage]);
-
   return (
-    <Form>
-      <h2>Filters</h2>
-      <div className="flex w-full flex-wrap gap-4 md:flex-nowrap">
-        <BreedFilter onBreedChange={updaters.breed} breed={formState.breed} />
+    <Form className="w-[3/4]">
+      <h2 className="text-4xl font-bold">Filters</h2>
+      <div className="flex w-full flex-col gap-4">
+        <BreedFilter
+          onBreedChange={(breed) => {
+            updaters.breed(breed);
+            updaters.page(1);
+          }}
+          breed={formState.breed}
+        />
+        <AgeFilters
+          minAge={formState.minAge}
+          maxAge={formState.maxAge}
+          setMinAge={updaters.minAge}
+          setMaxAge={updaters.maxAge}
+        />
         <SortComponent
           sortField={sort[0]}
           sortDirection={sort[1]}
@@ -226,14 +249,54 @@ export const SearchForm: FC<PropsType> = (props) => {
   );
 };
 
-// TODO make this component allow filtering by multiple values
+type AgeFilterProps = {
+  minAge: number | null;
+  maxAge: number | null;
+  setMinAge: (age: number | null) => void;
+  setMaxAge: (age: number | null) => void;
+};
 
+const AgeFilters: FC<AgeFilterProps> = (props) => {
+  const { maxAge, minAge, setMaxAge, setMinAge } = props;
+
+  const onValueChange = (val: string) => {
+    let numVal;
+    try {
+      numVal = parseInt(val);
+      return Math.max(numVal, 0);
+    } catch {
+      return null;
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Input
+        type="number"
+        label="Min Age"
+        placeholder="Set Min Age"
+        labelPlacement="outside"
+        value={minAge?.toString()}
+        onValueChange={(val) => setMinAge(onValueChange(val))}
+      />
+      <Input
+        type="number"
+        label="Max Age"
+        placeholder="Set Max Age"
+        labelPlacement="outside"
+        value={maxAge?.toString()}
+        onValueChange={(val) => setMaxAge(onValueChange(val))}
+      />
+    </div>
+  );
+};
+
+// TODO make this component allow filtering by multiple values
 type BreedFilterProps = {
   breed: string;
   onBreedChange: (breed: string) => void;
 };
 
-// https://www.heroui.com/docs/components/select#multiple-with-chips
 const BreedFilter: FC<BreedFilterProps> = (props) => {
   const { breed, onBreedChange } = props;
 
@@ -244,7 +307,6 @@ const BreedFilter: FC<BreedFilterProps> = (props) => {
 
   return (
     <Autocomplete
-      className="max-w-xs"
       label="Breed"
       placeholder={isPending ? "Loading..." : "Select Breed"}
       labelPlacement="outside"
@@ -318,8 +380,8 @@ const SortComponent: FC<SortComponentProps> = (props) => {
 type PaginationComponentProps = {
   page: number;
   onPaginationMove: (page: number) => void;
-  itemsPerPage: 25 | 50 | 100;
-  onItemsPerPageChange: (newItemsPerPage: ConstrainedPerPageType) => void;
+  itemsPerPage: number;
+  onItemsPerPageChange: (newItemsPerPage: number) => void;
   total: number;
 };
 
@@ -328,19 +390,24 @@ const PaginationComponent: FC<PaginationComponentProps> = (props) => {
     props;
 
   return (
-    <div>
-      <Pagination
-        page={page}
-        onChange={onPaginationMove}
-        total={Math.floor(total / itemsPerPage)}
-      />
+    <div className="w-full">
+      <p>Total: {total}</p>
+      <div>
+        <Pagination
+          page={page}
+          onChange={onPaginationMove}
+          total={Math.ceil(total / itemsPerPage)}
+          showControls
+        />
+      </div>
 
       <Select
+        className="mt-4"
         label="Items Per Page"
         selectedKeys={[itemsPerPage.toString()]}
         onSelectionChange={(key) =>
           onItemsPerPageChange(
-            parseInt(key.anchorKey ?? "25") as ConstrainedPerPageType,
+            parseInt(key.anchorKey ?? `${DEFAULT_FORM_STATE.perPage}`),
           )
         }
       >

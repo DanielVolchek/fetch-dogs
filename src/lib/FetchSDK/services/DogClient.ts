@@ -15,7 +15,7 @@ export type DogRouteResponses = {
     prev: number;
   };
   dogs: Dog[];
-  "dogs/match": Dog;
+  "dogs/match": { match: string };
 };
 
 export type DogSortOptions = "breed" | "name" | "age";

@@ -14,7 +14,7 @@ export const SearchResults: FC<PropsType> = (props) => {
   const { dogs, favorites, toggleFavoriteState } = props;
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-8">
+    <>
       {dogs.map((dog) => (
         <DogCard
           key={dog.id}
@@ -23,6 +23,6 @@ export const SearchResults: FC<PropsType> = (props) => {
           toggleFavoriteState={() => toggleFavoriteState(dog.id)}
         />
       ))}
-    </div>
+    </>
   );
 };
