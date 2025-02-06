@@ -18,7 +18,8 @@ export type DogRouteResponses = {
   "dogs/match": Dog;
 };
 
-type QueryFilter = "breed" | "name" | "age";
+export type DogSortOptions = "breed" | "name" | "age";
+export type DogSortFilter = SortFilter<DogSortOptions>;
 
 type GetDogsOptions = {
   breeds: string[];
@@ -27,7 +28,7 @@ type GetDogsOptions = {
   ageMax: number;
   size: number;
   from: number;
-  sort: SortFilter<QueryFilter>;
+  sort: DogSortFilter;
 };
 
 export class DogClient extends BaseClient {
@@ -67,7 +68,15 @@ export class DogClient extends BaseClient {
     });
   }
 
-  async getDogSearch(options: GetDogsOptions) {
-    return await this.fetchService.fetch("dogs/search", { params: options });
+  async getDogSearch(options: Partial<GetDogsOptions>) {
+    const _options: any = { ...options };
+    if (options.breeds) {
+      _options.breeds = JSON.stringify(options.breeds);
+    }
+    if (options.zipCodes) {
+      _options.zipCodes = JSON.stringify(options.zipCodes);
+    }
+
+    return await this.fetchService.fetch("dogs/search", { params: _options });
   }
 }

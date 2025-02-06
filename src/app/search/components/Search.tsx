@@ -5,12 +5,12 @@ import { SearchForm } from "./SearchForm";
 import { SearchResults } from "./SearchResults";
 
 export const Search = () => {
-  const [dogs, setDogs] = useState();
+  const [dogs, setDogs] = useState([]);
 
   return (
     <div>
+      <SearchForm updateDogs={setDogs} />
       <SearchResults dogs={[]} />
-      <SearchForm />
     </div>
   );
 };

@@ -37,7 +37,7 @@ export class FetchApiService {
     T = InternalResponseType[TPath],
   >(
     path: TPath,
-    options?: RequestInit & { params?: Record<string, unknown> },
+    options?: RequestInit & { params?: Record<string, string> },
   ): Promise<FetchType<T>> => {
     try {
       const defaultOptions = { credentials: "include" } as const;
@@ -46,18 +46,24 @@ export class FetchApiService {
       const url = new URL(path, this.base_url);
 
       for (const [key, value] of Object.entries(_options.params ?? {})) {
-        url.searchParams.append(key, JSON.stringify(value));
+        url.searchParams.append(key, value);
       }
 
       const res = await fetch(url.toString(), _options);
 
       if (!res.ok) {
+        if (res.status === 401) {
+          if (typeof window !== "undefined") {
+            window.location.replace("/");
+          }
+        }
+
         return {
           result: null,
           error: {
             status: res.status,
             // TODO add error message
-            message: `${"error message here TODO"}`,
+            message: `Error: Request Failed`,
           },
         };
       }
