@@ -46,7 +46,14 @@ export class FetchApiService {
       const url = new URL(path, this.base_url);
 
       for (const [key, value] of Object.entries(_options.params ?? {})) {
-        url.searchParams.append(key, value);
+        if (Array.isArray(value)) {
+          // Join the array values with '&' and append them as a single string
+          const joinedValues = value.join("&");
+          url.searchParams.append(key, joinedValues);
+        } else {
+          // Append non-array values directly
+          url.searchParams.append(key, value);
+        }
       }
 
       const res = await fetch(url.toString(), _options);

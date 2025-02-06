@@ -22,14 +22,14 @@ import { SortDir, SortFilter } from "@/lib/types";
 // Search Form provides the filters and search page
 
 type PropsType = {
-  updateDogs: (dogs: Dog[]) => void;
+  updateSearchState: (formStateType: FormStateType) => void;
 };
 
 const parseSort = <T extends string>(sort: SortFilter<T>) => {
   return sort.split(":") as [T, SortDir];
 };
 
-type FormStateType = {
+export type FormStateType = {
   breed: string | null;
   page: number;
   sort: SortFilter<DogSortOptions>;
@@ -41,7 +41,9 @@ const DEFAULT_FORM_STATE: FormStateType = {
   sort: "breed:desc",
 };
 
-export const useSearchFormState = (updateDogs: (dogs: Dog[]) => void) => {
+export const useSearchFormState = (
+  updateSearchState: PropsType["updateSearchState"],
+) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -113,13 +115,17 @@ export const useSearchFormState = (updateDogs: (dogs: Dog[]) => void) => {
     setFormState({ ...nextState });
   }, [searchParams]);
 
+  useEffect(() => {
+    updateSearchState(formState);
+  }, [formState]);
+
   return { formState, updateValue };
 };
 
 export const SearchForm: FC<PropsType> = (props) => {
-  const { updateDogs } = props;
+  const { updateSearchState } = props;
 
-  const { formState, updateValue } = useSearchFormState(updateDogs);
+  const { formState, updateValue } = useSearchFormState(updateSearchState);
 
   const sort = parseSort(formState.sort as SortFilter<DogSortOptions>);
 
@@ -152,23 +158,35 @@ type BreedFilterProps = {
 const BreedFilter: FC<BreedFilterProps> = (props) => {
   const { breed, onBreedChange } = props;
 
-  const { isPending, error, data } = useQuery({
-    queryKey: ["breeds"],
-    queryFn: () => FetchSDKClient.DogClient.getDogBreeds(),
-  });
+  const [isLoading, setLoading] = useState(true);
+  const [data, setData] = useState<string[]>();
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    FetchSDKClient.DogClient.getDogBreeds()
+      .then((result) => {
+        if (result.error) {
+          setError(result.error.message);
+        } else {
+          setData(result.result);
+        }
+      })
+      .catch((err) => setError(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <Autocomplete
       className="max-w-xs"
       label="Breed"
-      placeholder={isPending ? "Loading..." : "Select Breed"}
+      placeholder={isLoading ? "Loading..." : "Select Breed"}
       labelPlacement="outside"
-      isDisabled={isPending || !!error}
+      isDisabled={isLoading || !!error}
       selectedKey={breed}
       onSelectionChange={(key) => onBreedChange(key as string)}
     >
-      {data?.result
-        ? data.result.map((breed) => (
+      {data
+        ? data.map((breed) => (
             <AutocompleteItem key={breed}>{breed}</AutocompleteItem>
           ))
         : null}

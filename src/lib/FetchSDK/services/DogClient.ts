@@ -9,7 +9,7 @@ export type DogRoutes = "dogs/breeds" | "dogs/search" | "dogs" | "dogs/match";
 export type DogRouteResponses = {
   "dogs/breeds": string[];
   "dogs/search": {
-    resultIds: number[];
+    resultIds: string[];
     total: number;
     next: number;
     prev: number;
@@ -21,7 +21,7 @@ export type DogRouteResponses = {
 export type DogSortOptions = "breed" | "name" | "age";
 export type DogSortFilter = SortFilter<DogSortOptions>;
 
-type GetDogsOptions = {
+export type GetDogsSearchOptions = {
   breeds: string[];
   zipCodes: number[];
   ageMin: number;
@@ -47,7 +47,7 @@ export class DogClient extends BaseClient {
       };
     }
 
-    return await this.fetchService.fetch("dogs/search", {
+    return await this.fetchService.fetch("dogs", {
       method: "POST",
       body: JSON.stringify(dogs),
       headers: {
@@ -68,7 +68,7 @@ export class DogClient extends BaseClient {
     });
   }
 
-  async getDogSearch(options: Partial<GetDogsOptions>) {
+  async getDogSearch(options: Partial<GetDogsSearchOptions>) {
     const _options: any = { ...options };
     if (options.breeds) {
       _options.breeds = JSON.stringify(options.breeds);
