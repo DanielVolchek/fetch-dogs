@@ -1,9 +1,9 @@
 import { FetchApiService } from "@/lib/fetch";
 
-export type AuthRoutes = "/auth/login" | "/auth/logout";
+export type AuthRoutes = "auth/login" | "auth/logout";
 export type AuthRouteResponses = {
-  "/auth/login": void;
-  "/auth/logout": void;
+  "auth/login": void;
+  "auth/logout": void;
 };
 
 export class AuthClient {
@@ -14,7 +14,7 @@ export class AuthClient {
   }
 
   async login(name: string, email: string) {
-    return await this.fetchService.fetch("/auth/login", {
+    return await this.fetchService.fetch("auth/login", {
       method: "POST",
       body: JSON.stringify({ name, email }),
       headers: {
@@ -24,6 +24,6 @@ export class AuthClient {
   }
 
   async logout() {
-    return await this.fetchService.fetch("/auth/logout");
+    return await this.fetchService.fetch("auth/logout");
   }
 }

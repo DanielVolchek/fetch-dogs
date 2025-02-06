@@ -43,13 +43,13 @@ export class FetchApiService {
       const defaultOptions = { credentials: "include" } as const;
       const _options: typeof options = { ...defaultOptions, ...options };
 
-      const url = new URL(this.base_url, path);
+      const url = new URL(path, this.base_url);
 
       for (const [key, value] of Object.entries(_options.params ?? {})) {
         url.searchParams.append(key, JSON.stringify(value));
       }
 
-      const res = await fetch(`${this.base_url}/${path}`, _options);
+      const res = await fetch(url.toString(), _options);
 
       if (!res.ok) {
         return {
@@ -62,12 +62,13 @@ export class FetchApiService {
         };
       }
 
-      // const contentType = res.headers.get("content-type");
-      // if (contentType && contentType.includes("application/json")) {
-      // }
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = (await res.json()) as T;
+        return { result: data, error: null };
+      }
 
-      const data = (await res.json()) as T;
-      return { result: data, error: null };
+      return { result: (await res.text()) as T, error: null };
     } catch (err) {
       return { result: null, error: { status: 400, message: `${err}` } };
     }

@@ -3,11 +3,11 @@ import { FetchApiService } from "@/lib/fetch";
 import { Coordinates } from "../models";
 import { BaseClient } from "./BaseClient";
 
-export type LocationRoutes = "/locations" | "/locations/search";
+export type LocationRoutes = "locations" | "locations/search";
 
 export type LocationRouteResponses = {
-  "/locations": Location[];
-  "/locations/search": {
+  locations: Location[];
+  "locations/search": {
     result: Location[];
     total: number;
   };
@@ -46,14 +46,14 @@ export class LocationClient extends BaseClient {
       };
     }
 
-    return await this.fetchService.fetch("/locations", {
+    return await this.fetchService.fetch("locations", {
       method: "POST",
       body: JSON.stringify(zipCodes),
     });
   }
 
   async getLocationSearch(body: GetLocationOptions) {
-    return await this.fetchService.fetch("/locations/search", {
+    return await this.fetchService.fetch("locations/search", {
       method: "POST",
       body: JSON.stringify(body),
     });

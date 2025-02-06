@@ -1,25 +1,58 @@
 "use client";
 
+import { Form, Input } from "@heroui/react";
+import { useRouter } from "next/navigation";
 import { ChangeEventHandler, FormEventHandler, useState } from "react";
 
 import { FetchSDKClient } from "@/lib/FetchSDK/client";
 
 export const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPasword] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async () => {
+    const result = await FetchSDKClient.AuthClient.login(name, email);
+    console.log(result);
+    if (result.result) {
+      router.push("/search");
+    }
+  };
 
   const onSubmit: FormEventHandler = (e) => {
     e.preventDefault();
-
-    FetchSDKClient.AuthClient.login(username, password).then(() =>
-      console.log("login"),
-    );
+    handleLogin();
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <input placeholder="username" className="w-[100px]" />
-      <input placeholder="password" className="w-[100px]" />
-    </form>
+    <Form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <Input
+        isRequired
+        errorMessage="Please enter your name"
+        label="Name"
+        labelPlacement="outside"
+        name="name"
+        placeholder="Enter your name"
+        value={name}
+        onValueChange={setName}
+      />
+      <Input
+        isRequired
+        errorMessage="Please enter a valid email"
+        label="Email"
+        labelPlacement="outside"
+        name="email"
+        placeholder="Enter your email"
+        type="email"
+        value={email}
+        onValueChange={setEmail}
+      />
+      <button type="submit" className="border-2">
+        Submit
+      </button>
+    </Form>
   );
 };
