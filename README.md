@@ -17,8 +17,14 @@ Hosted at https://fetch-dogs-seven.vercel.app/
  - Added sorting by different fields
 
 #### Missed Features:
-With a bit more extra time, I would've liked to implement a Leaflet Map with the dog locations
-I also would refactor and clean up the code.
+With a bit more extra time, I would've liked to implement a Leaflet Map with the dog locations.
+
+I also would refactor and clean up the code. 
+
+I would refactor by
+- Creating a better integration with the internal SDK and React Query
+- Writing technical documentation and more comments throughout the code
+- Moving many of the components up to a shared folder (lib) and rewriting to a more composite design pattern, to make future development more seamless
 
 ## Developing Locally
 To develop locally, run
