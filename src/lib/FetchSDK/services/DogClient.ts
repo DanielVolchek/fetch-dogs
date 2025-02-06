@@ -69,14 +69,8 @@ export class DogClient extends BaseClient {
   }
 
   async getDogSearch(options: Partial<GetDogsSearchOptions>) {
-    const _options: any = { ...options };
-    if (options.breeds) {
-      _options.breeds = JSON.stringify(options.breeds);
-    }
-    if (options.zipCodes) {
-      _options.zipCodes = JSON.stringify(options.zipCodes);
-    }
-
-    return await this.fetchService.fetch("dogs/search", { params: _options });
+    return await this.fetchService.fetch("dogs/search", {
+      params: options as Record<string, string>,
+    });
   }
 }

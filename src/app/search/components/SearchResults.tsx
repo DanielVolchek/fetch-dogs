@@ -12,7 +12,7 @@ export const SearchResults: FC<PropsType> = (props) => {
   const { dogs } = props;
 
   return (
-    <div>
+    <div className="flex flex-wrap items-center justify-center gap-8">
       {dogs.map((dog) => (
         <DogCard key={dog.id} dog={dog} />
       ))}
