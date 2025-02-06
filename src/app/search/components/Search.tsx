@@ -1,8 +1,8 @@
 "use client";
-import { Button, Skeleton, Spinner } from "@heroui/react";
+import { Button, Spinner, Tooltip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import Cookies from "js-cookie";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FetchSDKClient } from "@/lib/FetchSDK/client";
 import { GetDogsSearchOptions } from "@/lib/FetchSDK/services/DogClient";
@@ -146,35 +146,88 @@ const useMatch = (favorites: string[]) => {
   return { matching, setMatching, query };
 };
 
+type MatchDogProps = {
+  onPress: () => void;
+  isDisabled: boolean;
+  color: "success" | "danger";
+  label: string;
+};
+
+const MatchDogButton: FC<MatchDogProps> = (props) => {
+  const { onPress, isDisabled, label, color } = props;
+  const [mousedOver, setMousedOver] = useState(false);
+
+  const onMouseOver = () => {
+    setMousedOver(true);
+  };
+
+  const onMouseOut = () => {
+    setMousedOver(false);
+  };
+
+  return (
+    <Tooltip
+      content="Add a dog to your favorites to get started"
+      color="foreground"
+      isOpen={isDisabled && mousedOver}
+      showArrow
+    >
+      <span
+        onMouseOver={onMouseOver}
+        onMouseOut={onMouseOut}
+        className="w-full"
+      >
+        <Button
+          onPress={onPress}
+          isDisabled={isDisabled}
+          color={color}
+          className="mt-4 w-full"
+        >
+          {label}
+        </Button>
+      </span>
+    </Tooltip>
+  );
+};
+
 export const Search = () => {
   const [formState, setFormState] = useState<FormStateType>();
   const { dogs, total, isPending } = useDogResults(formState);
 
-  const { favorites, toggleFavoriteState } = useFavorites();
+  const { favorites, toggleFavoriteState, updateFavorites } = useFavorites();
 
   const { matching, setMatching, query: matchQuery } = useMatch(favorites);
 
-  const onPress = () => {
+  const onPressMatch = () => {
     console.log("matching");
     setMatching(true);
   };
 
+  const onPressReset = () => {
+    updateFavorites([]);
+  };
+
   return (
     <div>
-      <TopContent />
-      <div className="md:flex">
-        <div className="sticky top-8 box-content h-full w-full px-8 md:w-[25vw]">
+      <div className="lg:flex">
+        <div className="top-8 box-content h-full w-full px-8 lg:sticky lg:w-[25vw]">
           <SearchForm updateSearchState={setFormState} total={total} />
-          <Button
-            onPress={onPress}
-            isDisabled={!favorites || !favorites.length}
-            color="success"
-            className="mt-4 w-full"
-          >
-            Match dog
-          </Button>
+          <div className="flex gap-2">
+            <MatchDogButton
+              onPress={onPressMatch}
+              isDisabled={!favorites || !favorites.length}
+              label="Match with a Dog"
+              color="success"
+            />
+            <MatchDogButton
+              onPress={onPressReset}
+              isDisabled={!favorites || !favorites.length}
+              label="Reset Favorites"
+              color="danger"
+            />
+          </div>
         </div>
-        <div className="flex-2 flex w-full flex-wrap gap-8">
+        <div className="flex-2 flex w-full flex-wrap justify-center gap-8 lg:justify-normal">
           {isPending ? (
             <Spinner className="mx-auto" />
           ) : (
@@ -196,8 +249,4 @@ export const Search = () => {
       </div>
     </div>
   );
-};
-
-const TopContent = () => {
-  return <h1 className="h-24">Pick a Dog</h1>;
 };

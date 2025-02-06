@@ -51,7 +51,7 @@ export type FormStateType = {
 const DEFAULT_FORM_STATE: FormStateType = {
   breed: "",
   page: 1,
-  sort: "breed:desc",
+  sort: "breed:asc",
   perPage: 25,
   minAge: null,
   maxAge: null,
@@ -212,7 +212,7 @@ export const SearchForm: FC<PropsType> = (props) => {
 
   return (
     <Form className="w-[3/4]">
-      <h2 className="text-4xl font-bold">Filters</h2>
+      <h2 className="text-4xl">Filters</h2>
       <div className="flex w-full flex-col gap-4">
         <BreedFilter
           onBreedChange={(breed) => {
@@ -343,36 +343,42 @@ const SortComponent: FC<SortComponentProps> = (props) => {
   const lastSortValue = useRef<string>("breed");
 
   return (
-    <div className="flex flex-col gap-2">
-      <Select
-        label="Sort By..."
-        labelPlacement="outside"
-        placeholder="Select sort"
-        selectedKeys={[sortField]}
-        onSelectionChange={(key) => {
-          console.log("sortfield ", sortField);
-          if (key.currentKey == null) {
-            updateSort(`${lastSortValue.current}:${sortDirection}`);
-          } else {
-            updateSort(`${key.currentKey}:${sortDirection}`);
-            lastSortValue.current = key.currentKey;
-          }
-        }}
+    <div>
+      <label
+        className="text-(--foreground) text-[14px] font-[500]"
+        htmlFor={"#sortBox"}
       >
-        {sortFields.map((sort) => (
-          <SelectItem key={sort.key}>{sort.label}</SelectItem>
-        ))}
-      </Select>
+        Sort By...
+      </label>
+      <div className="flex gap-2" id="#sortBox">
+        <Select
+          placeholder="Select sort"
+          selectedKeys={[sortField]}
+          onSelectionChange={(key) => {
+            console.log("sortfield ", sortField);
+            if (key.currentKey == null) {
+              updateSort(`${lastSortValue.current}:${sortDirection}`);
+            } else {
+              updateSort(`${key.currentKey}:${sortDirection}`);
+              lastSortValue.current = key.currentKey;
+            }
+          }}
+        >
+          {sortFields.map((sort) => (
+            <SelectItem key={sort.key}>{sort.label}</SelectItem>
+          ))}
+        </Select>
 
-      <Tabs
-        aria-label="Sort direction"
-        color="primary"
-        selectedKey={sortDirection}
-        onSelectionChange={(key) => updateSort(`${sortField}:${key}`)}
-      >
-        <Tab key="desc" title="descending"></Tab>
-        <Tab key="asc" title="Ascending"></Tab>
-      </Tabs>
+        <Tabs
+          aria-label="Sort direction"
+          color="primary"
+          selectedKey={sortDirection}
+          onSelectionChange={(key) => updateSort(`${sortField}:${key}`)}
+        >
+          <Tab key="asc" title="Ascending"></Tab>
+          <Tab key="desc" title="Descending"></Tab>
+        </Tabs>
+      </div>
     </div>
   );
 };

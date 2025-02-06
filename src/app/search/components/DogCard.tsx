@@ -37,7 +37,11 @@ export const DogCard: FC<PropsType> = (props) => {
   };
 
   return (
-    <Card onMouseOver={onMouseOver} onMouseOut={onMouseOut}>
+    <Card
+      onMouseOver={onMouseOver}
+      onMouseOut={onMouseOut}
+      className="w-full lg:w-auto"
+    >
       <CardBody>
         <div className="relative flex gap-4 pl-0 pt-4">
           <Image
