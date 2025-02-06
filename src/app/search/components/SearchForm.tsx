@@ -9,9 +9,17 @@ import {
   Tabs,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/router";
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReadonlyURLSearchParams, useSearchParams } from "next/navigation";
+import {
+  Dispatch,
+  FC,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { FetchSDKClient } from "@/lib/FetchSDK/client";
 import {
@@ -34,7 +42,7 @@ const parseSort = <T extends string>(sort: SortFilter<T>) => {
 };
 
 export type FormStateType = {
-  breed: string | null;
+  breed: string;
   page: number;
   sort: SortFilter<DogSortOptions>;
   perPage: ConstrainedPerPageType;
@@ -47,97 +55,139 @@ const DEFAULT_FORM_STATE: FormStateType = {
   perPage: 25,
 };
 
+type Options<T> = {
+  serializer?: (value: T) => string;
+  deserializer?: (value: string) => T;
+};
+
+const useStateWithURLUpdate = <T,>(
+  key: string,
+  initialValue: T,
+  options?: Options<T>,
+): [T, Dispatch<SetStateAction<T>>] => {
+  const [state, setState] = useState(initialValue);
+  const searchParams = useSearchParams();
+
+  const { serializer, deserializer } = options ?? {
+    serializer: undefined,
+    deserializer: undefined,
+  };
+
+  const firstRender = useRef(true);
+
+  // On load, set the value from the key
+  useEffect(() => {
+    if (!searchParams || !firstRender.current) {
+      return;
+    }
+
+    if (searchParams.has(key)) {
+      const value = searchParams.get(key);
+      if (!value) {
+        return;
+      }
+
+      if (deserializer) {
+        setState(() => deserializer(value));
+      } else {
+        setState(() => value as T);
+      }
+    }
+
+    firstRender.current = false;
+  }, [searchParams, deserializer, key]);
+
+  useEffect(() => {
+    let value: string | null = null;
+    if (serializer) {
+      value = serializer(state);
+    } else {
+      if (state) {
+        value = state.toString();
+      }
+    }
+    updateURLState(key, value);
+  }, [state, serializer, searchParams, key]);
+
+  return [state, setState];
+};
+
+const updateURLState = (name: string, value: string | null) => {
+  const params = new URLSearchParams(window.location.search);
+  const newParams = new URLSearchParams(params.toString());
+  if (
+    !value ||
+    (DEFAULT_FORM_STATE[name] && value === DEFAULT_FORM_STATE[name].toString())
+  ) {
+    newParams.delete(name);
+  } else {
+    newParams.set(name, value);
+  }
+
+  window.history.pushState(null, "", `?${newParams.toString()}`);
+};
+
+const toString = <T extends number | string | null>(value: T): string => {
+  if (value) {
+    return value.toString();
+  }
+  return "";
+};
+
 export const useSearchFormState = (
   updateSearchState: PropsType["updateSearchState"],
 ) => {
-  const searchParams = useSearchParams();
+  const [breed, setBreed] = useStateWithURLUpdate(
+    "breed",
+    DEFAULT_FORM_STATE.breed,
+  );
+  const [sort, setSort] = useStateWithURLUpdate(
+    "sort",
+    DEFAULT_FORM_STATE.sort,
+  );
+  const [page, setPage] = useStateWithURLUpdate(
+    "page",
+    DEFAULT_FORM_STATE.page,
+    { serializer: toString, deserializer: parseInt },
+  );
+  const [perPage, setPerPage] = useStateWithURLUpdate<ConstrainedPerPageType>(
+    "perPage",
+    DEFAULT_FORM_STATE.perPage,
+    {
+      serializer: toString,
+      deserializer: (value: string) =>
+        parseInt(value) as ConstrainedPerPageType,
+    },
+  );
 
-  const [formState, setFormState] = useState(DEFAULT_FORM_STATE);
+  const formState = useMemo(
+    () => ({
+      breed,
+      sort,
+      page,
+      perPage,
+    }),
+    [breed, sort, page, perPage],
+  );
 
   useEffect(() => {
     updateSearchState(formState);
-    console.log("Formstate changed", formState);
-  }, [updateSearchState, formState]);
+  }, [formState, updateSearchState]);
 
-  const updateURLState = useCallback(
-    (name: string, value: string | number | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (!value) {
-        params.delete(name);
-      } else {
-        params.set(name, value.toString());
-      }
+  const updaters = {
+    breed: setBreed,
+    sort: setSort,
+    page: setPage,
+    perPage: setPerPage,
+  };
 
-      window.history.pushState(null, "", `?${params.toString()}`);
-    },
-    [searchParams],
-  );
-
-  const updateValue = useCallback(
-    <T extends keyof typeof DEFAULT_FORM_STATE>(
-      key: T,
-      value: (typeof DEFAULT_FORM_STATE)[T],
-    ) => {
-      setFormState((prevFormState) => {
-        const updatedFormState = { ...prevFormState, [key]: value };
-        updateURLState(key, value);
-        return updatedFormState;
-      });
-    },
-    [updateURLState],
-  );
-
-  useEffect(() => {
-    console.log("formstate changed");
-  }, [formState.perPage]);
-
-  useMemo(() => {
-    console.log("formstate per page changed", formState.perPage);
-  }, [formState.perPage]);
-
-  useEffect(() => {
-    console.log("calling perpage use effect");
-    updateValue("page", 1);
-  }, [formState.perPage]);
-
-  // Load form state from URL
-  useEffect(() => {
-    // TODO this can be a funtion clean it up
-    const nextState = { ...formState };
-
-    const updateBySearchParam = <T extends keyof FormStateType>(
-      key: T,
-      int?: boolean,
-    ) => {
-      if (searchParams.has(key)) {
-        let value: string | number | null = searchParams.get(key);
-
-        console.log(key, value);
-
-        if (value) {
-          if (int) {
-            value = parseInt(value);
-          }
-          nextState[key] = value as FormStateType[T];
-        }
-      }
-    };
-
-    updateBySearchParam("breed");
-    updateBySearchParam("page", true);
-    updateBySearchParam("sort");
-    updateBySearchParam("perPage", true);
-
-    setFormState({ ...nextState });
-  }, []);
-
-  return { formState, updateValue };
+  return { formState, updaters };
 };
 
 export const SearchForm: FC<PropsType> = (props) => {
   const { updateSearchState, total } = props;
 
-  const { formState, updateValue } = useSearchFormState(updateSearchState);
+  const { formState, updaters } = useSearchFormState(updateSearchState);
 
   const sort = parseSort(formState.sort as SortFilter<DogSortOptions>);
 
@@ -153,14 +203,11 @@ export const SearchForm: FC<PropsType> = (props) => {
     <Form>
       <h2>Filters</h2>
       <div className="flex w-full flex-wrap gap-4 md:flex-nowrap">
-        <BreedFilter
-          onBreedChange={(breed) => updateValue("breed", breed)}
-          breed={formState.breed}
-        />
+        <BreedFilter onBreedChange={updaters.breed} breed={formState.breed} />
         <SortComponent
           sortField={sort[0]}
           sortDirection={sort[1]}
-          updateSort={(sort) => updateValue("sort", sort)}
+          updateSort={updaters.sort}
         />
       </div>
       {total && (
@@ -168,9 +215,10 @@ export const SearchForm: FC<PropsType> = (props) => {
           total={total}
           itemsPerPage={formState.perPage}
           page={formState.page}
-          onPaginationMove={(page) => updateValue("page", page)}
+          onPaginationMove={updaters.page}
           onItemsPerPageChange={(perPage) => {
-            updateValue("perPage", perPage);
+            updaters.perPage(perPage);
+            updaters.page(1);
           }}
         />
       )}
@@ -181,8 +229,8 @@ export const SearchForm: FC<PropsType> = (props) => {
 // TODO make this component allow filtering by multiple values
 
 type BreedFilterProps = {
-  breed: string | null;
-  onBreedChange: (breed: string | null) => void;
+  breed: string;
+  onBreedChange: (breed: string) => void;
 };
 
 // https://www.heroui.com/docs/components/select#multiple-with-chips
@@ -203,8 +251,7 @@ const BreedFilter: FC<BreedFilterProps> = (props) => {
       isDisabled={isPending || !!error}
       selectedKey={breed}
       onSelectionChange={(key) => {
-        console.log("key changed to ", key);
-        onBreedChange(key as string);
+        onBreedChange((key ?? DEFAULT_FORM_STATE.breed) as string);
       }}
     >
       {data?.result
