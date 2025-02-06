@@ -9,9 +9,8 @@ import {
   Tabs,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { u } from "framer-motion/client";
 import { useSearchParams } from "next/navigation";
-import { parse } from "path";
+import { useRouter } from "next/router";
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FetchSDKClient } from "@/lib/FetchSDK/client";
@@ -232,14 +231,23 @@ type SortComponentProps = {
 const SortComponent: FC<SortComponentProps> = (props) => {
   const { sortField, sortDirection, updateSort } = props;
 
+  const lastSortValue = useRef<string>("breed");
+
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <Select
         label="Sort By..."
+        labelPlacement="outside"
         placeholder="Select sort"
         selectedKeys={[sortField]}
         onSelectionChange={(key) => {
-          updateSort(`${key.anchorKey}:${sortDirection}`);
+          console.log("sortfield ", sortField);
+          if (key.currentKey == null) {
+            updateSort(`${lastSortValue.current}:${sortDirection}`);
+          } else {
+            updateSort(`${key.currentKey}:${sortDirection}`);
+            lastSortValue.current = key.currentKey;
+          }
         }}
       >
         {sortFields.map((sort) => (
@@ -247,19 +255,16 @@ const SortComponent: FC<SortComponentProps> = (props) => {
         ))}
       </Select>
 
-      <div>
-        <p>Sort Direction</p>
-        <Tabs
-          aria-label="Sort direction"
-          color="primary"
-          selectedKey={sortDirection}
-          onSelectionChange={(key) => updateSort(`${sortField}:${key}`)}
-        >
-          <Tab key="desc" title="descending"></Tab>
-          <Tab key="asc" title="Ascending"></Tab>
-        </Tabs>
-      </div>
-    </>
+      <Tabs
+        aria-label="Sort direction"
+        color="primary"
+        selectedKey={sortDirection}
+        onSelectionChange={(key) => updateSort(`${sortField}:${key}`)}
+      >
+        <Tab key="desc" title="descending"></Tab>
+        <Tab key="asc" title="Ascending"></Tab>
+      </Tabs>
+    </div>
   );
 };
 
@@ -280,7 +285,7 @@ const PaginationComponent: FC<PaginationComponentProps> = (props) => {
       <Pagination
         page={page}
         onChange={onPaginationMove}
-        total={Math.floor(total / itemsPerPage) || 1000}
+        total={Math.floor(total / itemsPerPage)}
       />
 
       <Select

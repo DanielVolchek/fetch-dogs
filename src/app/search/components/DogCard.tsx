@@ -28,11 +28,7 @@ export const DogCard: FC<PropsType> = (props) => {
   };
 
   return (
-    <Card
-      className="hover:-translate-y-4"
-      onMouseOver={onMouseOver}
-      onMouseOut={onMouseOut}
-    >
+    <Card className="" onMouseOver={onMouseOver} onMouseOut={onMouseOut}>
       <CardBody>
         <div className="relative flex w-[400px] gap-4 pl-0 pt-4">
           <Image
@@ -60,6 +56,32 @@ export const DogCard: FC<PropsType> = (props) => {
             />
           </button>
         )}
+      </CardBody>
+    </Card>
+  );
+};
+
+export const StaticDogCard: FC<{ dog: Dog }> = (props) => {
+  const { dog } = props;
+  return (
+    <Card>
+      <CardBody>
+        <div className="relative flex w-[400px] gap-4 pl-0 pt-4">
+          <Image
+            src={dog.img}
+            as={NextImage}
+            width={250}
+            height={250}
+            className="rounded-full object-cover object-center"
+            alt={`Dog: ${dog.name}; Age: ${dog.age}; Breed: ${dog.breed}`}
+          />
+          <div className="flex flex-col justify-center">
+            <h3 className="inline-block text-3xl">{dog.name}</h3>
+            <p>{dog.age} years old</p>
+            <p>{dog.breed}</p>
+            <p>{dog.zip_code}</p>
+          </div>
+        </div>
       </CardBody>
     </Card>
   );
