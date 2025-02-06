@@ -1,15 +1,4 @@
-import {
-  Autocomplete,
-  AutocompleteItem,
-  Form,
-  Input,
-  Pagination,
-  Select,
-  SelectItem,
-  Tab,
-  Tabs,
-} from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { Form } from "@heroui/react";
 import { useSearchParams } from "next/navigation";
 import {
   Dispatch,
@@ -21,12 +10,13 @@ import {
   useState,
 } from "react";
 
-import { FetchSDKClient } from "@/lib/FetchSDK/client";
-import {
-  DogSortFilter,
-  DogSortOptions,
-} from "@/lib/FetchSDK/services/DogClient";
+import { DogSortOptions } from "@/lib/FetchSDK/services/DogClient";
 import { SortDir, SortFilter } from "@/lib/types";
+
+import { AgeFilters } from "./AgeFilters";
+import { BreedFilter } from "./BreedFilter";
+import { PaginationComponent } from "./PaginationGroup";
+import { SortComponent } from "./SortFilter";
 
 // Search Form provides the filters and search page
 
@@ -36,7 +26,12 @@ type PropsType = {
 };
 
 const parseSort = <T extends string>(sort: SortFilter<T>) => {
-  return sort.split(":") as [T, SortDir];
+  const sortSplit = sort?.split(":") as [T, SortDir];
+  if (sortSplit && sortSplit[0] && sortSplit[1]) {
+    return sortSplit;
+  }
+
+  return parseSort(DEFAULT_FORM_STATE.sort);
 };
 
 export type FormStateType = {
@@ -48,7 +43,7 @@ export type FormStateType = {
   maxAge: number | null;
 };
 
-const DEFAULT_FORM_STATE: FormStateType = {
+export const DEFAULT_FORM_STATE: FormStateType = {
   breed: "",
   page: 1,
   sort: "breed:asc",
@@ -119,6 +114,7 @@ const updateURLState = (name: string, value: string | null) => {
   const newParams = new URLSearchParams(params.toString());
   if (
     !value ||
+    // @ts-ignore
     (DEFAULT_FORM_STATE[name] && value === DEFAULT_FORM_STATE[name].toString())
   ) {
     newParams.delete(name);
@@ -246,181 +242,5 @@ export const SearchForm: FC<PropsType> = (props) => {
         />
       )}
     </Form>
-  );
-};
-
-type AgeFilterProps = {
-  minAge: number | null;
-  maxAge: number | null;
-  setMinAge: (age: number | null) => void;
-  setMaxAge: (age: number | null) => void;
-};
-
-const AgeFilters: FC<AgeFilterProps> = (props) => {
-  const { maxAge, minAge, setMaxAge, setMinAge } = props;
-
-  const onValueChange = (val: string) => {
-    let numVal;
-    try {
-      numVal = parseInt(val);
-      return Math.max(numVal, 0);
-    } catch {
-      return null;
-    }
-  };
-
-  return (
-    <div className="flex gap-2">
-      <Input
-        type="number"
-        label="Min Age"
-        placeholder="Set Min Age"
-        labelPlacement="outside"
-        value={minAge?.toString()}
-        onValueChange={(val) => setMinAge(onValueChange(val))}
-      />
-      <Input
-        type="number"
-        label="Max Age"
-        placeholder="Set Max Age"
-        labelPlacement="outside"
-        value={maxAge?.toString()}
-        onValueChange={(val) => setMaxAge(onValueChange(val))}
-      />
-    </div>
-  );
-};
-
-// TODO make this component allow filtering by multiple values
-type BreedFilterProps = {
-  breed: string;
-  onBreedChange: (breed: string) => void;
-};
-
-const BreedFilter: FC<BreedFilterProps> = (props) => {
-  const { breed, onBreedChange } = props;
-
-  const { isPending, error, data } = useQuery({
-    queryKey: ["breeds"],
-    queryFn: () => FetchSDKClient.DogClient.getDogBreeds(),
-  });
-
-  return (
-    <Autocomplete
-      label="Breed"
-      placeholder={isPending ? "Loading..." : "Select Breed"}
-      labelPlacement="outside"
-      isDisabled={isPending || !!error}
-      selectedKey={breed}
-      onSelectionChange={(key) => {
-        onBreedChange((key ?? DEFAULT_FORM_STATE.breed) as string);
-      }}
-    >
-      {data?.result
-        ? data.result.map((breed) => (
-            <AutocompleteItem key={breed}>{breed}</AutocompleteItem>
-          ))
-        : null}
-    </Autocomplete>
-  );
-};
-
-const sortFields: { key: DogSortOptions; label: string }[] = [
-  { key: "breed", label: "Breed" },
-  { key: "name", label: "Name" },
-  { key: "age", label: "Age" },
-];
-
-type SortComponentProps = {
-  sortField: DogSortOptions;
-  sortDirection: "asc" | "desc";
-  updateSort: (sort: DogSortFilter) => void;
-};
-
-const SortComponent: FC<SortComponentProps> = (props) => {
-  const { sortField, sortDirection, updateSort } = props;
-
-  const lastSortValue = useRef<string>("breed");
-
-  return (
-    <div>
-      <label
-        className="text-(--foreground) text-[14px] font-[500]"
-        htmlFor={"#sortBox"}
-      >
-        Sort By...
-      </label>
-      <div className="flex gap-2" id="#sortBox">
-        <Select
-          placeholder="Select sort"
-          selectedKeys={[sortField]}
-          onSelectionChange={(key) => {
-            console.log("sortfield ", sortField);
-            if (key.currentKey == null) {
-              updateSort(`${lastSortValue.current}:${sortDirection}`);
-            } else {
-              updateSort(`${key.currentKey}:${sortDirection}`);
-              lastSortValue.current = key.currentKey;
-            }
-          }}
-        >
-          {sortFields.map((sort) => (
-            <SelectItem key={sort.key}>{sort.label}</SelectItem>
-          ))}
-        </Select>
-
-        <Tabs
-          aria-label="Sort direction"
-          color="primary"
-          selectedKey={sortDirection}
-          onSelectionChange={(key) => updateSort(`${sortField}:${key}`)}
-        >
-          <Tab key="asc" title="Ascending"></Tab>
-          <Tab key="desc" title="Descending"></Tab>
-        </Tabs>
-      </div>
-    </div>
-  );
-};
-
-type PaginationComponentProps = {
-  page: number;
-  onPaginationMove: (page: number) => void;
-  itemsPerPage: number;
-  onItemsPerPageChange: (newItemsPerPage: number) => void;
-  total: number;
-};
-
-const PaginationComponent: FC<PaginationComponentProps> = (props) => {
-  const { page, onPaginationMove, itemsPerPage, onItemsPerPageChange, total } =
-    props;
-
-  return (
-    <div className="w-full">
-      <p>Total: {total}</p>
-      <div>
-        <Pagination
-          page={page}
-          onChange={onPaginationMove}
-          total={Math.ceil(total / itemsPerPage)}
-          showControls
-        />
-      </div>
-
-      <Select
-        className="mt-4"
-        label="Items Per Page"
-        selectedKeys={[itemsPerPage.toString()]}
-        onSelectionChange={(key) =>
-          onItemsPerPageChange(
-            parseInt(key.anchorKey ?? `${DEFAULT_FORM_STATE.perPage}`),
-          )
-        }
-      >
-        <SelectItem key={"25"}>25</SelectItem>
-        <SelectItem key={"50"}>50</SelectItem>
-        <SelectItem key={"100"}>100</SelectItem>
-      </Select>
-    </div>
   );
 };

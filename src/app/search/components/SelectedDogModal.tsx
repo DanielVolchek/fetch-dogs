@@ -1,7 +1,7 @@
 import { Modal, ModalBody, ModalContent, Spinner } from "@heroui/react";
-import JSConfetti from "js-confetti";
-import { FC, useEffect } from "react";
+import { FC } from "react";
 
+import { Confetti } from "@/components/Confetti";
 import { Dog } from "@/lib/FetchSDK/models";
 
 import { DogCard } from "./DogCard";
@@ -38,12 +38,4 @@ export const SelectedDogModal: FC<PropsType> = (props) => {
       </ModalContent>
     </Modal>
   );
-};
-
-const Confetti = () => {
-  useEffect(() => {
-    const confetti = new JSConfetti();
-    confetti.addConfetti();
-  }, []);
-  return <></>;
 };

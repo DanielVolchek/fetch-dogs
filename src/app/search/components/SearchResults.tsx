@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC } from "react";
 
 import { Dog } from "@/lib/FetchSDK/models";
 

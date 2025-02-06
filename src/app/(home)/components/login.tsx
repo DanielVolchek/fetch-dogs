@@ -12,11 +12,8 @@ export const Login = () => {
 
   const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleLogin = async () => {
     const result = await FetchSDKClient.AuthClient.login(name, email);
-    console.log(result);
     if (result.result) {
       router.push("/search");
     }

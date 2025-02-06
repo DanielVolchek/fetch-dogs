@@ -1,23 +1,10 @@
-import { Dog } from "./FetchSDK/models";
 import { AuthRouteResponses, AuthRoutes } from "./FetchSDK/services/AuthClient";
 import { DogRouteResponses, DogRoutes } from "./FetchSDK/services/DogClient";
 import {
   LocationRouteResponses,
   LocationRoutes,
 } from "./FetchSDK/services/LocationClient";
-
-type FetchType<T> =
-  | {
-      result: T;
-      error: null;
-    }
-  | {
-      result: null;
-      error: {
-        status: number;
-        message: string;
-      };
-    };
+import { FetchType } from "./types";
 
 type InternalAPIPaths = AuthRoutes | DogRoutes | LocationRoutes;
 
@@ -25,6 +12,10 @@ type InternalResponseType = AuthRouteResponses &
   DogRouteResponses &
   LocationRouteResponses;
 
+// Fetch API Service provides an internal fetch function
+// utilizing a passed in URL to allow for different development environments
+//
+// Future expansions would be to harden the fetch for errors as well as add different methods for different HTTP methods
 export class FetchApiService {
   private base_url: string;
 
@@ -47,11 +38,9 @@ export class FetchApiService {
 
       for (const [key, value] of Object.entries(_options.params ?? {})) {
         if (Array.isArray(value)) {
-          // Join the array values with '&' and append them as a single string
           const joinedValues = value.join("&");
           url.searchParams.append(key, joinedValues);
         } else {
-          // Append non-array values directly
           url.searchParams.append(key, value);
         }
       }
@@ -69,8 +58,7 @@ export class FetchApiService {
           result: null,
           error: {
             status: res.status,
-            // TODO add error message
-            message: `Error: Request Failed`,
+            message: `Error: Request Failed, check console for more details`,
           },
         };
       }

@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader, Image } from "@heroui/react";
+import { Card, CardBody, Image } from "@heroui/react";
 import NextImage from "next/image";
 import { FC, useState } from "react";
 
