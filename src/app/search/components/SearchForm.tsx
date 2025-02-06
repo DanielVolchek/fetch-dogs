@@ -2,17 +2,19 @@ import {
   Autocomplete,
   AutocompleteItem,
   Form,
+  Pagination,
   Select,
   SelectItem,
   Tab,
   Tabs,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FC, useCallback, useEffect, useState } from "react";
+import { u } from "framer-motion/client";
+import { useSearchParams } from "next/navigation";
+import { parse } from "path";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FetchSDKClient } from "@/lib/FetchSDK/client";
-import { Dog } from "@/lib/FetchSDK/models";
 import {
   DogSortFilter,
   DogSortOptions,
@@ -23,7 +25,10 @@ import { SortDir, SortFilter } from "@/lib/types";
 
 type PropsType = {
   updateSearchState: (formStateType: FormStateType) => void;
+  total: number;
 };
+
+type ConstrainedPerPageType = 25 | 50 | 100;
 
 const parseSort = <T extends string>(sort: SortFilter<T>) => {
   return sort.split(":") as [T, SortDir];
@@ -33,105 +38,121 @@ export type FormStateType = {
   breed: string | null;
   page: number;
   sort: SortFilter<DogSortOptions>;
+  perPage: ConstrainedPerPageType;
 };
 
 const DEFAULT_FORM_STATE: FormStateType = {
   breed: "",
-  page: 0,
+  page: 1,
   sort: "breed:desc",
+  perPage: 25,
 };
 
 export const useSearchFormState = (
   updateSearchState: PropsType["updateSearchState"],
 ) => {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [formState, setFormState] = useState(DEFAULT_FORM_STATE);
 
-  const updateURLState = (name: string, value: string | number | null) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (!value) {
-      params.delete(name);
-    } else {
-      params.set(name, value.toString());
-    }
+  useEffect(() => {
+    updateSearchState(formState);
+    console.log("Formstate changed", formState);
+  }, [updateSearchState, formState]);
 
-    window.history.pushState(null, "", `?${params.toString()}`);
-  };
+  const updateURLState = useCallback(
+    (name: string, value: string | number | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (!value) {
+        params.delete(name);
+      } else {
+        params.set(name, value.toString());
+      }
 
-  const updateValue = <T extends keyof typeof DEFAULT_FORM_STATE>(
-    key: T,
-    value: (typeof DEFAULT_FORM_STATE)[T],
-  ) => {
-    const formStateCopy = { ...formState, key: value };
-    setFormState(formStateCopy);
-    updateURLState(key, value);
-  };
+      window.history.pushState(null, "", `?${params.toString()}`);
+    },
+    [searchParams],
+  );
+
+  const updateValue = useCallback(
+    <T extends keyof typeof DEFAULT_FORM_STATE>(
+      key: T,
+      value: (typeof DEFAULT_FORM_STATE)[T],
+    ) => {
+      setFormState((prevFormState) => {
+        const updatedFormState = { ...prevFormState, [key]: value };
+        updateURLState(key, value);
+        return updatedFormState;
+      });
+    },
+    [updateURLState],
+  );
 
   useEffect(() => {
-    let breedArray;
-    if (formState.breed) {
-      breedArray = [formState.breed];
-    }
+    console.log("formstate changed");
+  }, [formState.perPage]);
 
-    const options = {
-      sort: formState.sort,
-    };
+  useMemo(() => {
+    console.log("formstate per page changed", formState.perPage);
+  }, [formState.perPage]);
 
-    if (breedArray) {
-      options["breeds"] = breedArray;
-    }
-
-    const newDogs = FetchSDKClient.DogClient.getDogSearch(options);
-  }, [formState]);
+  useEffect(() => {
+    console.log("calling perpage use effect");
+    updateValue("page", 1);
+  }, [formState.perPage]);
 
   // Load form state from URL
   useEffect(() => {
     // TODO this can be a funtion clean it up
     const nextState = { ...formState };
 
-    if (searchParams.has("breed")) {
-      const breed = searchParams.get("breed");
-      if (breed) {
-        nextState["breed"] = breed;
-      }
-    }
+    const updateBySearchParam = <T extends keyof FormStateType>(
+      key: T,
+      int?: boolean,
+    ) => {
+      if (searchParams.has(key)) {
+        let value: string | number | null = searchParams.get(key);
 
-    if (searchParams.has("page")) {
-      const page = searchParams.get("page");
-      if (page) {
-        nextState["page"] = parseInt(page);
-      }
-    }
+        console.log(key, value);
 
-    if (searchParams.has("sort")) {
-      const sort = searchParams.get("sort");
-      if (sort) {
-        nextState["sort"] = sort as SortFilter<DogSortOptions>;
+        if (value) {
+          if (int) {
+            value = parseInt(value);
+          }
+          nextState[key] = value as FormStateType[T];
+        }
       }
-    }
+    };
+
+    updateBySearchParam("breed");
+    updateBySearchParam("page", true);
+    updateBySearchParam("sort");
+    updateBySearchParam("perPage", true);
 
     setFormState({ ...nextState });
-  }, [searchParams]);
-
-  useEffect(() => {
-    updateSearchState(formState);
-  }, [formState]);
+  }, []);
 
   return { formState, updateValue };
 };
 
 export const SearchForm: FC<PropsType> = (props) => {
-  const { updateSearchState } = props;
+  const { updateSearchState, total } = props;
 
   const { formState, updateValue } = useSearchFormState(updateSearchState);
 
   const sort = parseSort(formState.sort as SortFilter<DogSortOptions>);
 
+  useEffect(() => {
+    console.log("component loaded for the first time");
+  }, []);
+
+  useEffect(() => {
+    console.log("per page changed");
+  }, [formState.perPage]);
+
   return (
     <Form>
-      <h2>dogs</h2>
+      <h2>Filters</h2>
       <div className="flex w-full flex-wrap gap-4 md:flex-nowrap">
         <BreedFilter
           onBreedChange={(breed) => updateValue("breed", breed)}
@@ -143,6 +164,17 @@ export const SearchForm: FC<PropsType> = (props) => {
           updateSort={(sort) => updateValue("sort", sort)}
         />
       </div>
+      {total && (
+        <PaginationComponent
+          total={total}
+          itemsPerPage={formState.perPage}
+          page={formState.page}
+          onPaginationMove={(page) => updateValue("page", page)}
+          onItemsPerPageChange={(perPage) => {
+            updateValue("perPage", perPage);
+          }}
+        />
+      )}
     </Form>
   );
 };
@@ -150,7 +182,7 @@ export const SearchForm: FC<PropsType> = (props) => {
 // TODO make this component allow filtering by multiple values
 
 type BreedFilterProps = {
-  breed: string | undefined;
+  breed: string | null;
   onBreedChange: (breed: string | null) => void;
 };
 
@@ -158,35 +190,26 @@ type BreedFilterProps = {
 const BreedFilter: FC<BreedFilterProps> = (props) => {
   const { breed, onBreedChange } = props;
 
-  const [isLoading, setLoading] = useState(true);
-  const [data, setData] = useState<string[]>();
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    FetchSDKClient.DogClient.getDogBreeds()
-      .then((result) => {
-        if (result.error) {
-          setError(result.error.message);
-        } else {
-          setData(result.result);
-        }
-      })
-      .catch((err) => setError(err))
-      .finally(() => setLoading(false));
-  }, []);
+  const { isPending, error, data } = useQuery({
+    queryKey: ["breeds"],
+    queryFn: () => FetchSDKClient.DogClient.getDogBreeds(),
+  });
 
   return (
     <Autocomplete
       className="max-w-xs"
       label="Breed"
-      placeholder={isLoading ? "Loading..." : "Select Breed"}
+      placeholder={isPending ? "Loading..." : "Select Breed"}
       labelPlacement="outside"
-      isDisabled={isLoading || !!error}
+      isDisabled={isPending || !!error}
       selectedKey={breed}
-      onSelectionChange={(key) => onBreedChange(key as string)}
+      onSelectionChange={(key) => {
+        console.log("key changed to ", key);
+        onBreedChange(key as string);
+      }}
     >
-      {data
-        ? data.map((breed) => (
+      {data?.result
+        ? data.result.map((breed) => (
             <AutocompleteItem key={breed}>{breed}</AutocompleteItem>
           ))
         : null}
@@ -240,6 +263,39 @@ const SortComponent: FC<SortComponentProps> = (props) => {
   );
 };
 
-const PaginationComponent = () => {
-  return;
+type PaginationComponentProps = {
+  page: number;
+  onPaginationMove: (page: number) => void;
+  itemsPerPage: 25 | 50 | 100;
+  onItemsPerPageChange: (newItemsPerPage: ConstrainedPerPageType) => void;
+  total: number;
+};
+
+const PaginationComponent: FC<PaginationComponentProps> = (props) => {
+  const { page, onPaginationMove, itemsPerPage, onItemsPerPageChange, total } =
+    props;
+
+  return (
+    <div>
+      <Pagination
+        page={page}
+        onChange={onPaginationMove}
+        total={Math.floor(total / itemsPerPage) || 1000}
+      />
+
+      <Select
+        label="Items Per Page"
+        selectedKeys={[itemsPerPage.toString()]}
+        onSelectionChange={(key) =>
+          onItemsPerPageChange(
+            parseInt(key.anchorKey ?? "25") as ConstrainedPerPageType,
+          )
+        }
+      >
+        <SelectItem key={"25"}>25</SelectItem>
+        <SelectItem key={"50"}>50</SelectItem>
+        <SelectItem key={"100"}>100</SelectItem>
+      </Select>
+    </div>
+  );
 };

@@ -14,9 +14,13 @@ const useDogSearch = (searchState: FormStateType) => {
     queryKey: [searchState],
     queryFn: ({ queryKey }) => {
       const searchState = queryKey[0];
-      const options: GetDogsSearchOptions = {};
-      options.breeds = [searchState.breed];
+      const options: Partial<GetDogsSearchOptions> = {};
+      if (searchState.breed) {
+        options.breeds = [searchState.breed];
+      }
       options.sort = searchState.sort;
+      options.size = searchState.perPage;
+      options.from = (searchState.page - 1) * searchState.perPage;
       return FetchSDKClient.DogClient.getDogSearch(options);
     },
   });
@@ -36,20 +40,23 @@ const useDogList = (dogIds: string[] | undefined) => {
   return query;
 };
 
-const useDogResults = (formStateType: FormStateType) => {
+const useDogResults = (formStateType: FormStateType | undefined) => {
   const dogSearchQuery = useDogSearch(formStateType);
   const dogListQuery = useDogList(dogSearchQuery.data?.result?.resultIds);
 
-  return { dogs: dogListQuery.data?.result };
+  return {
+    dogs: dogListQuery.data?.result,
+    total: dogSearchQuery.data?.result?.total,
+  };
 };
 
 export const Search = () => {
   const [formState, setFormState] = useState<FormStateType>();
-  const { dogs } = useDogResults(formState);
+  const { dogs, total } = useDogResults(formState);
 
   return (
     <div>
-      <SearchForm updateSearchState={setFormState} />
+      <SearchForm updateSearchState={setFormState} total={total} />
       <SearchResults dogs={dogs ?? []} />
     </div>
   );

@@ -1,22 +1,40 @@
 import { Card, CardBody, CardHeader, Image } from "@heroui/react";
 import NextImage from "next/image";
-import { FC } from "react";
+import { FC, useState } from "react";
 
+import { HeartIcon } from "@/components/HeartIcon";
 import { Dog } from "@/lib/FetchSDK/models";
 
 type PropsType = {
   dog: Dog;
+  favorite: boolean;
+  toggleFavoriteState: () => void;
 };
 
 export const DogCard: FC<PropsType> = (props) => {
-  const { dog } = props;
+  const { dog, favorite, toggleFavoriteState } = props;
 
-  const onPress = () => {};
+  const [mousedOver, setMousedOver] = useState(false);
+
+  const onMouseOver = () => {
+    setMousedOver(true);
+  };
+  const onMouseOut = () => {
+    setMousedOver(false);
+  };
+
+  const onClick = () => {
+    toggleFavoriteState();
+  };
 
   return (
-    <Card isPressable onPress={onPress} className="hover:-translate-y-4">
+    <Card
+      className="hover:-translate-y-4"
+      onMouseOver={onMouseOver}
+      onMouseOut={onMouseOut}
+    >
       <CardBody>
-        <div className="flex w-[400px] gap-4 pl-0 pt-4">
+        <div className="relative flex w-[400px] gap-4 pl-0 pt-4">
           <Image
             src={dog.img}
             as={NextImage}
@@ -32,6 +50,16 @@ export const DogCard: FC<PropsType> = (props) => {
             <p>{dog.zip_code}</p>
           </div>
         </div>
+
+        {(mousedOver || favorite) && (
+          <button className="absolute right-5 top-5" onClick={onClick}>
+            <HeartIcon
+              stroke="red"
+              fill={favorite ? "red" : "none"}
+              className="cursor-pointer hover:fill-[red]"
+            />
+          </button>
+        )}
       </CardBody>
     </Card>
   );
