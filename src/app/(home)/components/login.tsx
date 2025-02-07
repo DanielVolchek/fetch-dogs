@@ -1,6 +1,6 @@
 "use client";
 
-import { Form, Input } from "@heroui/react";
+import { Button, Form, Input } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { FormEventHandler, useState } from "react";
 
@@ -25,11 +25,12 @@ export const Login = () => {
   };
 
   return (
-    <Form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <Form onSubmit={onSubmit} className="ml-4 mt-2 flex flex-col gap-4">
+      <p className="text-4xl text-white">Log In</p>
       <Input
         isRequired
         errorMessage="Please enter your name"
-        label="Name"
+        label={<span className="text-xl font-bold text-black">Name</span>}
         labelPlacement="outside"
         name="name"
         placeholder="Enter your name"
@@ -39,7 +40,7 @@ export const Login = () => {
       <Input
         isRequired
         errorMessage="Please enter a valid email"
-        label="Email"
+        label={<span className="text-xl font-bold text-black">Email</span>}
         labelPlacement="outside"
         name="email"
         placeholder="Enter your email"
@@ -47,9 +48,9 @@ export const Login = () => {
         value={email}
         onValueChange={setEmail}
       />
-      <button type="submit" className="border-2">
-        Submit
-      </button>
+      <Button type="submit" color="success" className="w-full border-2">
+        Log In
+      </Button>
     </Form>
   );
 };
