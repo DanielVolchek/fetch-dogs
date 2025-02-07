@@ -23,14 +23,14 @@ export const SelectedDogModal: FC<PropsType> = (props) => {
       isDismissable={false}
       className="w-full"
     >
-      <ModalContent>
-        <ModalBody className="w-full p-8">
+      <ModalContent className="box-content w-full p-8">
+        <ModalBody className="w-full">
           {isPending || !match ? (
             <Spinner />
           ) : (
             <>
               <Confetti />
-              <h2>Your dog is </h2>
+              <h2 className="text-2xl">Your dog is </h2>
               <DogCard dog={match} staticCard={true} />
             </>
           )}
