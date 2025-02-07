@@ -48,12 +48,6 @@ export class FetchApiService {
       const res = await fetch(url.toString(), _options);
 
       if (!res.ok) {
-        if (res.status === 401) {
-          if (typeof window !== "undefined") {
-            window.location.replace("/");
-          }
-        }
-
         return {
           result: null,
           error: {
