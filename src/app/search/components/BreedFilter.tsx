@@ -25,6 +25,7 @@ export const BreedFilter: FC<PropsType> = (props) => {
   return (
     <Autocomplete
       label="Breed"
+      className="w-full"
       placeholder={isPending ? "Loading..." : "Select Breed"}
       labelPlacement="outside"
       isDisabled={isPending || !!error}
